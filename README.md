@@ -8,3 +8,4 @@ c_list:
 c_basics:
 
     size_snprintf.c: Suggest try it in different platform, x86_32, x86_64 at least for int/long size. It shows snprintf() will not append '\0' if length to copy equals string dest length for your caution.
+    02X_printf.c: %02X will output 2 hex
