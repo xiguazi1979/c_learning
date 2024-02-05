@@ -1,4 +1,4 @@
-# 二叉搜索树
+## 二叉搜索树
 https://blog.csdn.net/qq_28229519/article/details/126329923  
 二叉查找树也称二叉树,是一种结合了二分查找策略的链接结构,众所周知,链式结构也称链表,它可以在不确定数据项个数的情况下存储数据项,那为什么又要使用树这种复杂的数据结构去存储呢?
 为了更有效率的查找。
@@ -26,4 +26,99 @@ Traverse(const Tree *ptree,void (*pfun)(Item item)); 遍历函数的声明很精
 gcc binary1.c binary1_main.c -o test
 ./test
 enjoy
+
+## 红黑树（一种平衡二叉树）
+### kernel RBtree
+https://elixir.bootlin.com/linux/v5.10/source/include/linux/rbtree.h#L49 
+
+https://zhuanlan.zhihu.com/p/183006935 （内核RB tree）
+巧妙之处是使用成员rb_parent_color同时存储两种数据，一是其双亲结点的地址，另一是此结点的着色。
+提问：64位linux中sizeof(long)对齐的是32位还是64位？见c_basics的endian部分
+struct rb_node
+{
+	unsigned long  rb_parent_color;
+#define	RB_RED		0
+#define	RB_BLACK	1
+	struct rb_node *rb_right;
+	struct rb_node *rb_left;
+} __attribute__((aligned(sizeof(long))));
+
+（1）、从内核中拷贝源文件：
+
+$ mkdir redblack
+$ cd redblack/
+$ cp ../../lib/rbtree.c .
+$ cp ../../include/linux/rbtree.h .
+（2）、修改源文件：
+
+a、C文件rbtree.c
+
+修改包含头文件的代码
+
+//删除以下两行代码
+#include <linux/rbtree.h>
+#include <linux/module.h>
+//新增以下代码，即包含当前目录中的头文件rbtree.h
+#include "rbtree.h"
+删除所有的EXPORT_SYMBOL宏
+
+EXPORT_SYMBOL(rb_insert_color);
+EXPORT_SYMBOL(rb_erase);
+EXPORT_SYMBOL(rb_augment_insert);
+EXPORT_SYMBOL(rb_augment_erase_begin);
+EXPORT_SYMBOL(rb_augment_erase_end);
+EXPORT_SYMBOL(rb_first);
+EXPORT_SYMBOL(rb_last);
+EXPORT_SYMBOL(rb_next);
+EXPORT_SYMBOL(rb_prev);
+EXPORT_SYMBOL(rb_replace_node);
+b、头文件rbtree.h
+
+删除包含头文件的代码，并添加三个宏定义
+
+//删除以下两行代码
+#include <linux/kernel.h>
+#include <linux/stddef.h>
+ 
+/* ../include/linux/stddef.h */
+#undef NULL
+#if defined(__cplusplus)
+#define NULL 0
+#else
+#define NULL ((void *)0)
+#endif
+ 
+/*../include/linux/stddef.h */
+#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+ 
+/* ../include/linux/kernel.h */
+#define container_of(ptr, type, member) ({			\
+	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
+	(type *)( (char *)__mptr - offsetof(type,member) );})
+
+（3）、示例代码
+c_tree\kernelRBtree\kernelRBtree_example.c
+
+编译并执行：
+
+$ gcc rbtree.c test.c -o test
+richard@tanglinux:~/algorithm/redblack$ ./test 10
+Please enter 10 integers:
+23
+4
+56
+32
+89
+122
+12
+21
+45
+23
+The 23 already exists.
+ 
+the first test
+4 12 21 23 32 45 56 89 122 
+ 
+the second test
+4 12 23 32 45 56 89 122
 

@@ -22,3 +22,7 @@ NOIP:
 Certificates:
 
     Achieved certificates by Michael
+
+kernel study:
+
+    Kernel code reading summary
