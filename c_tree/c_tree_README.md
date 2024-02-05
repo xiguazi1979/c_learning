@@ -29,7 +29,7 @@ enjoy
 
 ## 红黑树（一种平衡二叉树）
 ### kernel RBtree
-https://elixir.bootlin.com/linux/v5.10/source/include/linux/rbtree.h#L49 
+https://elixir.bootlin.com/linux/v5.10/source/include/linux/rbtree.h#L49 (it has RCU, difficult to try, but rbtree.c has good comment to study for rbtree.c  So in trial we use v3.0)
 
 https://zhuanlan.zhihu.com/p/183006935 （内核RB tree）
 巧妙之处是使用成员rb_parent_color同时存储两种数据，一是其双亲结点的地址，另一是此结点的着色。
