@@ -18,7 +18,7 @@ NOIP:
     CSP_J2022               - source code practiced and won 2nd prize
     2023_coding             - source code practiced, not attended competition
     LuoGu                   - Since 2023/6, some LuoGu quiz practiced
-
+    utility                 - Some useful skills like pbds, STL
 Certificates:
 
     Achieved certificates by Michael
