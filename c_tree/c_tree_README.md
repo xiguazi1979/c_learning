@@ -28,6 +28,45 @@ gcc binary1.c binary1_main.c -o test
 enjoy
 
 ## 红黑树（一种平衡二叉树）
+注意： kernel代码里的右旋逻辑和这里的右旋动画一致，但代码看的时候最好随手画个图，理解他的几个主要步骤。
+材料里的右旋动画上方的图似乎是错的。旋转的核心是grandparent，GP的父只是个不会动的根最后指向新的child而已。
+__rb_rotate_right(struct rb_node *node, struct rb_root *root)
+调用者发现LL失衡后，设置其grandparent为pivot(支点)，作为此函数的第一个参数
+其中node变量是支点，他要跟他的左子一起做一次右旋，root是树根
+
+内部局部变量parent是GP的父, left是GP的做子（也就是调用者插入节点的父）。看着代码的每一行画两个图最容易理解。
+
+https://www.cnblogs.com/crazymakercircle/p/16320430.html 这个讲算法很清楚，大约1小时学习。但是JAVA的。
+AVL的比较：
+由于这种严格的平衡条件，导致AVL需要花大量时间在调整上，AVL树一般使用场景在于查询场景， 而不是 增加删除 频繁的场景。
+黑树(rbt)在查询速率和平衡调整中寻找平衡，放宽了树的平衡条件，从而可以用于 增加删除 频繁的场景。
+红黑树是一种特化的AVL树（平衡二叉树）
+红黑树是在1972年由Rudolf Bayer发明的，当时被称为平衡二叉B树（symmetric binary B-trees）.
+在1978年被 Leo J. Guibas 和 Robert Sedgewick 修改为如今的“红黑树”.
+RBTree是复杂的, 但它的最坏情况运行时间也是非常良好的,并且在实践中是高效的
+它可以在O(log n)时间内做查找,插入和删除
+
+红色属性 说明，红色节点的孩子，一定是黑色。 但是，RBTree 黑色节点的孩子，可以是红色，也可以是黑色，具体如下图。
+叶子属性 说明， 叶子节点可以是空nil ，AVL的叶子节点不是空的，具体如下图。
+RBtree在avl的节点上，增加了 颜色属性的 数据，相当于 增加了空间的消耗。 通过颜色属性的增加， 换取，后面平衡操作的次数 减少。
+
+rbt 的 左子树和右子树的黑节点的层数是相等的
+红黑树的平衡条件，不是以整体的高度来约束的，而是以黑色 节点的 高度，来约束的。
+所以称红黑树这种平衡为黑色完美平衡。
+去掉 rbt中的红色节点，会得到 一个四叉树， 从根节点到每一个叶子，高度相同，就是rbt的root到叶子的黑色路径长度。
+任何不平衡都会在三次旋转之内解决
+红黑树的算法时间复杂度和AVL相同，但统计性能比AVL树更高
+适用性：AVL查找效率高
+如果你的应用中，查询的次数远远大于插入和删除，那么选择AVL树，如果查询和插入删除次数几乎差不多，应选择红黑树。
+
+https://zhuanlan.zhihu.com/p/78152265 
+1．节点分为红色或者黑色；（颜色属性）
+2．根节点必为黑色；（根属性）
+3．叶子节点都为黑色，且为null；（叶子属性）
+4．连接红色节点的两个子节点都为黑色（红黑树不会出现相邻的红色节点）；（红色属性）
+5．从任意节点出发，到其每个叶子节点的路径中包含相同数量的黑色节点；（黑色属性）黑色属性，可以理解为平衡特征， 如果满足不了平衡特征，就要进行平衡操作
+6．新加入到红黑树的节点为红色节点；原因参照最后一条原则： 红色破坏原则的可能性最小，如果是黑色, 很可能导致这条支路的黑色节点比其它支路的要多1，破坏了平衡。
+
 https://zhuanlan.zhihu.com/p/584295999 
 红黑树的基本定义：
 
@@ -55,6 +94,7 @@ https://zhuanlan.zhihu.com/p/584295999
 https://elixir.bootlin.com/linux/v5.10/source/include/linux/rbtree.h#L49 (it has RCU, difficult to try, but rbtree.c has good comment to study for rbtree.c  So in trial we use v3.0)
 
 https://zhuanlan.zhihu.com/p/183006935 （内核RB tree）
+建议看完基本的RB tree教程后gdb调试一下插入两个数3,2 即可理解代码
 巧妙之处是使用成员rb_parent_color同时存储两种数据，一是其双亲结点的地址，另一是此结点的着色。
 提问：64位linux中sizeof(long)对齐的是32位还是64位？见c_basics的endian部分
 struct rb_node
@@ -125,6 +165,10 @@ c_tree\kernelRBtree\kernelRBtree_example.c
 编译并执行：
 
 $ gcc rbtree.c test.c -o test
+gdb ./test
+set args 5
+run
+
 richard@tanglinux:~/algorithm/redblack$ ./test 10
 Please enter 10 integers:
 23
@@ -144,7 +188,11 @@ the first test
  
 the second test
 4 12 23 32 45 56 89 122
-
+使用的精华在：
+my_insert()
+    /* Add new node and rebalance tree. */
+    rb_link_node(&data->my_node, parent, tmp); // simply search out then insert
+    rb_insert_color(&data->my_node, root); // rebalance
 ## AVL树
 AVL树应该用的不多，主要是需要进行大量的递归计算树的高度，
 
