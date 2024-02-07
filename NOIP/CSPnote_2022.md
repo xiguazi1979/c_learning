@@ -58,3 +58,18 @@ CSP-S2 是下午比赛，因此中午不能吃太饱、建议小睡一会。
 考试时允许带食品，建议巧克力。
 “厕所是 OIer 灵感的源泉。”洗手间可以让人冷静下来。
 一定合理安排时间，不能炸心态，不能死磕一题。
+
+# CSP-S题型筛选
+2023题目详解：
+https://zhuanlan.zhihu.com/p/663683037 
+1. BFS 枚举
+2. 组合
+3. x
+4. 图
+
+# 省选题型-为全国统一
+https://ac.nowcoder.com/acm/archive/noisx 
+https://blog.csdn.net/qq_39565901/article/details/115920151 
+https://zhuanlan.zhihu.com/p/613610454 
+https://www.luogu.com.cn/training/148821#problems 
+https://www.luogu.com.cn/training/8436 
