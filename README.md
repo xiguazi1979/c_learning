@@ -26,3 +26,6 @@ Certificates:
 kernel study:
 
     Kernel code reading summary
+
+AI:
+    Let's start embracing AI
