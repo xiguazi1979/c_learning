@@ -16,6 +16,13 @@ typedef enum {
     OPER_DEL    = 1
 }OPER_TYPE;
 
+/* Table1's entry content */
+#define MAX_NAME_LEN 11
+typedef struct T_EntryT1Content
+{
+    char name[MAX_NAME_LEN];
+} T_EntryT1Content;
+
 static const int DB1 = 1;
 static redisContext *ctx = NULL;
 static char def_key1 = {0x30,0x31,0x32,0x33,0};
@@ -81,23 +88,23 @@ makeRedisKey(t_key_table1* key, char* rediskey)
 }
 
 void
-printSessionEntry(T_DhcpSessionInformation* psDhcpSessionInfo)
+printentryEntryT1(T_EntryT1Content* pEntryT1)
 {
-    if (psDhcpSessionInfo)
+    if (pEntryT1)
     {
-        fprintf(stdout, "cAddress = %02x:%02x:%02x:%02x:%02x:%02x\n",
-                psDhcpSessionInfo->sChaddr.cAddress[0],
-                psDhcpSessionInfo->sChaddr.cAddress[1],
-                psDhcpSessionInfo->sChaddr.cAddress[2],
-                psDhcpSessionInfo->sChaddr.cAddress[3],
-                psDhcpSessionInfo->sChaddr.cAddress[4],
-                psDhcpSessionInfo->sChaddr.cAddress[5]);
+        fprintf(stdout, "EntryT1's name = %02x:%02x:%02x:%02x:%02x:%02x\n",
+                pEntryT1->name[0],
+                pEntryT1->name[1],
+                pEntryT1->name[2],
+                pEntryT1->name[3],
+                pEntryT1->name[4],
+                pEntryT1->name[5]);
         return;
     }
 }
 
 static int
-addSessionEntry(t_key_table1* key, T_DhcpSessionInformation* psDhcpSessionInfo)
+addentryEntryT1(t_key_table1* key, T_EntryT1Content* pEntryT1)
 {
     char tmpkey[64];
     redisReply *reply;
@@ -114,7 +121,7 @@ addSessionEntry(t_key_table1* key, T_DhcpSessionInformation* psDhcpSessionInfo)
     }
 
     makeRedisKey(key, tmpkey);
-    reply = (redisReply*)redisCommand(ctx, "SET %s %b EXAT %lld", tmpkey, psDhcpSessionInfo, sizeof(T_DhcpSessionInformation), ex);
+    reply = (redisReply*)redisCommand(ctx, "SET %s %b EXAT %lld", tmpkey, pEntryT1, sizeof(T_EntryT1Content), ex);
     if (ctx->err)
     {
         printf("Error sending redis command (%s)\n", ctx->errstr ? ctx->errstr : "unknown");
@@ -130,7 +137,7 @@ addSessionEntry(t_key_table1* key, T_DhcpSessionInformation* psDhcpSessionInfo)
 }
 
 static int
-deleteSessionEntry(char* key)
+deleteentryEntryT1(char* key)
 {
     redisReply *reply;
     int rc = -1;
@@ -164,7 +171,7 @@ deleteSessionEntry(char* key)
 }
 
 static int
-getSessionEntry(char* key, T_DhcpSessionInformation* psDhcpSessionInfo)
+getentryEntryT1(char* key, T_EntryT1Content* pEntryT1)
 {
     redisReply *reply;
     int rc = -1;
@@ -185,13 +192,13 @@ getSessionEntry(char* key, T_DhcpSessionInformation* psDhcpSessionInfo)
     }
     else
     {
-        /* reply should be binary string of the session info */
+        /* reply should be binary string of the entry info */
         if (reply->type == REDIS_REPLY_STRING)
         {
             /* check size in case it's changed in newer sw version */
-            size_t size = reply->len <= sizeof(T_DhcpSessionInformation) ?
-                reply->len : sizeof(T_DhcpSessionInformation);
-            memcpy(psDhcpSessionInfo, reply->str, size);
+            size_t size = reply->len <= sizeof(T_EntryT1Content) ?
+                reply->len : sizeof(T_EntryT1Content);
+            memcpy(pEntryT1, reply->str, size);
             rc = 0;
         }
     }
@@ -201,7 +208,7 @@ getSessionEntry(char* key, T_DhcpSessionInformation* psDhcpSessionInfo)
 }
 
 int
-DpoeDhcpV4Prozone(t_key_table1* key, T_DhcpSessionInformation* psDhcpSessionInfo, OPER_TYPE oper)
+DBentryoper(t_key_table1* key, T_EntryT1Content* pEntryT1, OPER_TYPE oper)
 {
     int rc = 0;
 
@@ -209,10 +216,10 @@ DpoeDhcpV4Prozone(t_key_table1* key, T_DhcpSessionInformation* psDhcpSessionInfo
     {
         case OPER_ADD:
         {
-            /* add session entry, redis will overwrite if already exists */
-            if ((rc = addSessionEntry(key, psDhcpSessionInfo)) != 0)
+            /* add entry entry, redis will overwrite if already exists */
+            if ((rc = addentryEntryT1(key, pEntryT1)) != 0)
             {
-                printf("Error addSessionEntry\n");
+                printf("Error addentryEntryT1\n");
             }
             break;
         }
@@ -220,7 +227,7 @@ DpoeDhcpV4Prozone(t_key_table1* key, T_DhcpSessionInformation* psDhcpSessionInfo
         {
             char key[64];
             makeRedisKey(key, key);
-            rc = deleteSessionEntry(key);
+            rc = deleteentryEntryT1(key);
             break;
         }
         default:
@@ -235,7 +242,7 @@ static int
 createEntries(void)
 {
     t_key_table1 key;
-    T_DhcpSessionInformation session;
+    T_EntryT1Content entry;
 
     memcpy(key.key1, def_key1, sizeof(def_key1));
     memcpy(key.key2, def_key2, sizeof(def_key2));
@@ -244,8 +251,8 @@ createEntries(void)
     {
         key.key1[5] = i;
         key.key2[5] = i;
-        memcpy(session.sChaddr.cAddress, key.key2, sizeof(char));
-        DpoeDhcpV4Prozone(&key, &session, OPER_ADD);
+        memcpy(entry.name, key.key2, sizeof(char));
+        DBentryoper(&key, &entry, OPER_ADD);
     }
 
     return 0;
@@ -257,7 +264,7 @@ deleteAllEntries(void)
     int rc = 0;
     redisReply *reply;
     char *key;
-    T_DhcpSessionInformation psDhcpSessionInfo;
+    T_EntryT1Content pEntryT1;
 
      /* initialize context if not already done */
     if (ctx == NULL)
@@ -277,11 +284,11 @@ deleteAllEntries(void)
         rc = 1;
     }
 
-    fprintf(stdout, "Remove all %d session entries from database:\n", (int)reply->elements);
+    fprintf(stdout, "Remove all %d entry entries from database:\n", (int)reply->elements);
     for (int i = 0; i < reply->elements; i++)
     {
         key = reply->element[i]->str;
-        if ((rc = deleteSessionEntry(key)) == 0)
+        if ((rc = deleteentryEntryT1(key)) == 0)
         {
             fprintf(stdout, "Removed entry %s\n", key);
         }
@@ -301,7 +308,7 @@ dumpEntries(void)
     int rc = 0;
     redisReply *reply;
     char *key;
-    T_DhcpSessionInformation psDhcpSessionInfo;
+    T_EntryT1Content pEntryT1;
 
      /* initialize context if not already done */
     if (ctx == NULL)
@@ -322,13 +329,13 @@ dumpEntries(void)
     }
     else
     {
-        fprintf(stdout, "All %d session entries in database:\n", (int)reply->elements);
+        fprintf(stdout, "All %d entry entries in database:\n", (int)reply->elements);
         for (int i = 0; i < reply->elements; i++)
         {
             key = reply->element[i]->str;
-            if ((rc = getSessionEntry(key, &psDhcpSessionInfo)) == 0)
+            if ((rc = getentryEntryT1(key, &pEntryT1)) == 0)
             {
-                printSessionEntry(&psDhcpSessionInfo);
+                printentryEntryT1(&pEntryT1);
             }
             else
             {
@@ -350,7 +357,7 @@ usage(char *pn)
             "   -d --delete\n"
             "        Remove all entries\n"
             "   -p --print\n"
-            "        print all session entries\n", basename(pn));
+            "        print all entry entries\n", basename(pn));
 }
 
 int
