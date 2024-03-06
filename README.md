@@ -29,3 +29,6 @@ kernel study:
 
 AI:
     Let's start embracing AI
+
+DB:
+    Database related study code

@@ -1,13 +1,14 @@
 #include <unistd.h>
 #include <string.h>
+#include <time.h>
 #include <getopt.h>
-#include <hiredis/hiredis.h>
+#include "hiredis/hiredis.h"
 
 #define MAX_KEY_LEN 11
 typedef struct t_key_table1 {
     int  dummykey1;
-    char key1[MAX_KEY_LEN] key1;
-    char key2[MAX_KEY_LEN] key1;
+    char key1[MAX_KEY_LEN];
+    char key2[MAX_KEY_LEN];
 } t_key_table1;
 
 
@@ -25,8 +26,8 @@ typedef struct T_EntryT1Content
 
 static const int DB1 = 1;
 static redisContext *ctx = NULL;
-static char def_key1 = {0x30,0x31,0x32,0x33,0};
-static char def_key2 = {0x41,0x42,0x43,0x44,0};
+static char def_key1[] = {0x30,0x31,0x32,0x33,0};
+static char def_key2[] = {0x41,0x42,0x43,0x44,0};
 
 static int
 initRedisContext()
@@ -121,7 +122,9 @@ addentryEntryT1(t_key_table1* key, T_EntryT1Content* pEntryT1)
     }
 
     makeRedisKey(key, tmpkey);
-    reply = (redisReply*)redisCommand(ctx, "SET %s %b EXAT %lld", tmpkey, pEntryT1, sizeof(T_EntryT1Content), ex);
+    /* redis 6.2 support EXAT, older use EX */
+    // reply = (redisReply*)redisCommand(ctx, "SET %s %b EXAT %lld", tmpkey, pEntryT1, sizeof(T_EntryT1Content), ex);
+    reply = (redisReply*)redisCommand(ctx, "SET %s %b EX %lld", tmpkey, pEntryT1, sizeof(T_EntryT1Content), 300);
     if (ctx->err)
     {
         printf("Error sending redis command (%s)\n", ctx->errstr ? ctx->errstr : "unknown");
@@ -211,7 +214,6 @@ int
 DBentryoper(t_key_table1* key, T_EntryT1Content* pEntryT1, OPER_TYPE oper)
 {
     int rc = 0;
-
     switch(oper)
     {
         case OPER_ADD:
@@ -225,9 +227,9 @@ DBentryoper(t_key_table1* key, T_EntryT1Content* pEntryT1, OPER_TYPE oper)
         }
         case OPER_DEL:
         {
-            char key[64];
-            makeRedisKey(key, key);
-            rc = deleteentryEntryT1(key);
+            char tmpkey[64];
+            makeRedisKey(key, tmpkey);
+            rc = deleteentryEntryT1(tmpkey);
             break;
         }
         default:
@@ -251,7 +253,7 @@ createEntries(void)
     {
         key.key1[5] = i;
         key.key2[5] = i;
-        memcpy(entry.name, key.key2, sizeof(char));
+        memcpy(entry.name, key.key2, sizeof(key.key2));
         DBentryoper(&key, &entry, OPER_ADD);
     }
 
@@ -365,7 +367,7 @@ main(int argc, char **argv)
 {
     int rc = 1;
     int c, option_index;
-    const char *short_options = "pcd";
+    const char *short_options = "cdp";
     const struct option long_options[] = {
         {"create",  no_argument,          0,    'c'},
         {"delete",  no_argument,          0,    'd'},
