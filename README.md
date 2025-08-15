@@ -32,3 +32,6 @@ AI:
 
 DB:
     Database related study code
+
+TOOLS:
+    Note on various tool installation and usage, like IDE
