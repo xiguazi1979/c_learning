@@ -557,6 +557,8 @@ print(tokenizer.decode(outputs[0]))
 
 #### GPU环境
 https://modelscope.cn/models/Qwen/Qwen1.5-7B-Chat-GPTQ-Int4
+https://gitee.com/hf-models/Qwen1.5-7B-Chat 
+
 #### 阶段1：下载模型
 1. 安装 Git LFS 和 CUDA Toolkit（如未安装可跳过）
     ```bash
@@ -569,6 +571,7 @@ https://modelscope.cn/models/Qwen/Qwen1.5-7B-Chat-GPTQ-Int4
 2. 下载 Qwen1.5-7B 量化模型
 cd ~/llm_env
 git clone https://huggingface.co/Qwen/Qwen1.5-7B-Chat-GPTQ-Int4
+git clone https://gitee.com/hf-models/Qwen1.5-7B-Chat.git
 
 #### 阶段2：准备运行环境
 1. 进入模型目录
@@ -582,6 +585,39 @@ git clone https://huggingface.co/Qwen/Qwen1.5-7B-Chat-GPTQ-Int4
     ```
 #### 阶段3：运行推理代码
 1. 新建 Python 文件（如 run_qwen.py），写入以下内容：
+```
+from transformers import AutoModelForCausalLM, AutoTokenizer
+device = "cuda" # the device to load the model onto
+
+model = AutoModelForCausalLM.from_pretrained(
+    "Qwen/Qwen1.5-7B-Chat",
+    torch_dtype="auto",
+    device_map="auto"
+)
+tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen1.5-7B-Chat")
+
+prompt = "Give me a short introduction to large language model."
+messages = [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": prompt}
+]
+text = tokenizer.apply_chat_template(
+    messages,
+    tokenize=False,
+    add_generation_prompt=True
+)
+model_inputs = tokenizer([text], return_tensors="pt").to(device)
+
+generated_ids = model.generate(
+    model_inputs.input_ids,
+    max_new_tokens=512
+)
+generated_ids = [
+    output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
+]
+
+response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+```
     ```python
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
