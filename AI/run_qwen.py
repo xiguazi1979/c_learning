@@ -106,18 +106,17 @@ def clean_response(text):
     return text.strip()
 
 def get_complete_input():
-    """获取完整的输入"""
+    """获取完整的输入（输入 END 结束，多行内容和空行都可保留）"""
     print("\n请输入您的问题或要求：")
-    print("提示：可以粘贴多行文本，输入空行结束")
+    print("提示：可以粘贴多行文本，输入 END（单独一行）结束")
     
     content = []
     while True:
         try:
             line = input()
-            if line.strip() == '' and content:  # 有内容后空行结束
+            if line.strip().lower() == 'end':
                 break
-            if line.strip():  # 只添加非空行
-                content.append(line)
+            content.append(line)
         except EOFError:
             break
         except KeyboardInterrupt:
