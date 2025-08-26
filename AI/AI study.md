@@ -778,7 +778,7 @@ wsl --set-default-version 2
 
     设置 用户名 和 密码：
 
-        用户名建议全英文（如llmuser）
+        用户名建议全英文（如llmuser）www/www
 
         密码输入时不会显示字符，正常输入后回车确认
         （密码用于sudo操作，建议简单易记如123456）
@@ -817,6 +817,8 @@ sudo apt install -y python3-venv git
 mkdir -p ~/llm_env && cd ~/llm_env
 python3 -m venv venv
 source venv/bin/activate
+    pip install --upgrade pip
+    pip install wheel setuptools
 
 ### 步骤3 python3环境
 阶段2：安装依赖
@@ -829,12 +831,58 @@ pip install transformers sentencepiece accelerate
 
 家里台式机（RTX 3060）：
 bash
+1. **检查并安装 Python3**
+    ```bash
+    python3 --version
+    # 如果未安装，执行：
+    sudo apt update
+    sudo apt install -y python3 python3-pip python3-venv
+    ```
 
-#安装GPU加速版（必须严格匹配你的CUDA版本！）
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118  # CUDA 11.8
-pip install transformers accelerate bitsandbytes
-#验证GPU是否可用
-python -c "import torch; print(torch.cuda.is_available())"
+2. **创建项目目录和虚拟环境**
+    ```bash
+    mkdir -p ~/llm_env
+    cd ~/llm_env
+    python3 -m venv venv
+    source venv/bin/activate
+    ```
+
+3. **升级 pip 和安装常用工具**
+    ```bash
+    pip install --upgrade pip
+    pip install wheel setuptools
+    ```
+
+4. **安装 PyTorch（GPU版，CUDA 11.8）**
+    ```bash
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+    ```
+
+5. **安装 Hugging Face 及相关依赖**
+    ```bash
+    pip install transformers accelerate bitsandbytes sentencepiece
+    ```
+
+6. **验证 GPU 是否可用**
+    ```bash
+    python -c "import torch; print(torch.cuda.is_available())"
+    # 输出 True 表示 GPU 可用
+    ```
+
+7. **安装其他常用工具（可选）**
+    ```bash
+    pip install jupyterlab htop git-lfs
+    ```
+
+8. **环境激活说明**
+    - 每次新开终端时，进入项目目录并激活环境：
+      ```bash
+      cd ~/llm_env
+      source venv/bin/activate
+      ```
+
+9. **后续步骤提示**
+    - 完成上述步骤后，可继续下载模型、进行推理或微调实验。
 
 ### 模型推理实验
 阶段1：下载模型
@@ -842,6 +890,7 @@ python -c "import torch; print(torch.cuda.is_available())"
 sudo apt-get update
 sudo apt-get install -y git-lfs
 git lfs install
+sudo apt install nvidia-cuda-toolkit
 
 笔记本（无显卡） → 选择 TinyLlama-1.1B（4bit量化）：
 bash
@@ -935,3 +984,92 @@ print(tokenizer.decode(outputs[0]))
     text
 
 你好！我是一个TinyLlama-1.1B人工智能助手，擅长回答一般性问题...
+
+#### GPU环境
+https://modelscope.cn/models/Qwen/Qwen1.5-7B-Chat-GPTQ-Int4
+https://gitee.com/hf-models/Qwen1.5-7B-Chat 
+
+#### 阶段1：下载模型
+1. 安装 Git LFS 和 CUDA Toolkit（如未安装可跳过）
+    ```bash
+    sudo apt-get update
+    sudo apt-get install -y git-lfs
+    git lfs install
+    sudo apt install nvidia-cuda-toolkit
+    ```
+
+2. 下载 Qwen1.5-7B 量化模型
+cd ~/llm_env
+git clone https://huggingface.co/Qwen/Qwen1.5-7B-Chat-GPTQ-Int4
+git clone https://gitee.com/hf-models/Qwen1.5-7B-Chat.git
+
+#### 阶段2：准备运行环境
+1. 进入模型目录
+    ```bash
+    cd ~/llm_env/Qwen1.5-7B-Chat-GPTQ-Int4
+    ```
+
+2. 安装依赖（如 transformers、accelerate 已安装可跳过）
+    ```bash
+    pip install transformers accelerate bitsandbytes sentencepiece
+    ```
+#### 阶段3：运行推理代码
+1. 新建 Python 文件（如 run_qwen.py），写入以下内容：
+```
+from transformers import AutoModelForCausalLM, AutoTokenizer
+device = "cuda" # the device to load the model onto
+
+model = AutoModelForCausalLM.from_pretrained(
+    "Qwen/Qwen1.5-7B-Chat",
+    torch_dtype="auto",
+    device_map="auto"
+)
+tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen1.5-7B-Chat")
+
+prompt = "Give me a short introduction to large language model."
+messages = [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": prompt}
+]
+text = tokenizer.apply_chat_template(
+    messages,
+    tokenize=False,
+    add_generation_prompt=True
+)
+model_inputs = tokenizer([text], return_tensors="pt").to(device)
+
+generated_ids = model.generate(
+    model_inputs.input_ids,
+    max_new_tokens=512
+)
+generated_ids = [
+    output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
+]
+
+response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+```
+    ```python
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+
+    model = AutoModelForCausalLM.from_pretrained(
+        "./Qwen1.5-7B-Chat-GPTQ-Int4",
+        device_map="auto"
+    )
+    tokenizer = AutoTokenizer.from_pretrained("./Qwen1.5-7B-Chat-GPTQ-Int4")
+
+    inputs = tokenizer("你好，请介绍一下你自己", return_tensors="pt").to("cuda")
+    outputs = model.generate(**inputs, max_new_tokens=128)
+    print(tokenizer.decode(outputs[0]))
+    ```
+
+2. 运行推理脚本
+    ```bash
+    python run_qwen.py
+    ```
+#### 阶段4：验证输出
+- 预期模型会生成类似以下的回复：
+    ```
+    你好！我是Qwen1.5-7B人工智能助手，擅长回答一般性问题...
+    ```
+
+---
