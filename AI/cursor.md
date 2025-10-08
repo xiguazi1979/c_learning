@@ -36,3 +36,10 @@ Agent 将读取终端输出并决定下一步要做什么。核心思想是让 A
 用于学习和探索的只读模式。Ask 搜索您的代码库并提供答案而不进行任何更改 - 非常适合在修改代码之前理解代码。
 
 ### agent 用来干活
+
+## 读懂pdf
+微软有mark it down, pdf -> .md
+then use cursor to understand it
+
+## confluence page edit
+只需装插件，然后talk to AI to generate page
